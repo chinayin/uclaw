@@ -131,7 +131,7 @@ export class GatewayLauncher extends EventEmitter<GatewayEvents> {
 
     // Windows doesn't support SIGUSR1 — fall back to stop+start
     if (process.platform === "win32") {
-      log.info("Windows detected, falling back to stop+start for reload");
+      log.debug("Windows detected, falling back to stop+start for reload");
       await this.stop();
       await this.start();
       return;
@@ -261,16 +261,16 @@ export class GatewayLauncher extends EventEmitter<GatewayEvents> {
           writeFileSync(
             preloadPath,
             `"use strict";
-const t0=performance.now(),path=require("path"),Module=require("module");
+const t0=performance.now(),V=!!process.env.EASYCLAW_STARTUP_DEBUG,path=require("path"),Module=require("module");
 let sdkPath=null,sdkDir=null;
 const origRes=Module._resolveFilename;
 Module._resolveFilename=function(r,p,m,o){if(sdkPath){if(r==="openclaw/plugin-sdk")return sdkPath;if(r.startsWith("openclaw/plugin-sdk/"))return origRes.call(this,path.join(sdkDir,r.slice(20)),p,m,o)}return origRes.call(this,r,p,m,o)};
 const origLoad=Module._load;let skipped=false;
-Module._load=function(r,p,m){if(!skipped&&/plugin-sdk[/\\\\]index\\.js$/.test(r)){skipped=true;try{sdkPath=origRes.call(Module,r,p,m);sdkDir=require("path").dirname(sdkPath);process.stderr.write("[startup-timer] plugin-sdk deferred: "+sdkPath+"\\n")}catch{}return{}}const s=performance.now();const res=origLoad.call(this,r,p,m);const d=performance.now()-s;if(d>50)process.stderr.write("[startup-timer] +"+((performance.now()-t0)|0)+"ms require(\\""+r+"\\") took "+(d|0)+"ms\\n");return res};
+Module._load=function(r,p,m){if(!skipped&&/plugin-sdk[/\\\\]index\\.js$/.test(r)){skipped=true;try{sdkPath=origRes.call(Module,r,p,m);sdkDir=require("path").dirname(sdkPath);if(V)process.stderr.write("[startup-timer] plugin-sdk deferred: "+sdkPath+"\\n")}catch{}return{}}const s=performance.now();const res=origLoad.call(this,r,p,m);const d=performance.now()-s;if(V&&d>50)process.stderr.write("[startup-timer] +"+((performance.now()-t0)|0)+"ms require(\\""+r+"\\") took "+(d|0)+"ms\\n");return res};
 process.stderr.write("[startup-timer] +0ms preload executing\\n");
 const cc=process.env.NODE_COMPILE_CACHE;if(cc)process.stderr.write("[startup-timer] compile-cache: "+cc+"\\n");else process.stderr.write("[startup-timer] compile cache: DISABLED\\n");
 setImmediate(()=>process.stderr.write("[startup-timer] +"+(performance.now()-t0|0)+"ms event loop started\\n"));
-const ow=process.stdout.write;process.stdout.write=function(c,...a){if(String(c).includes("listening on")){process.stderr.write("[startup-timer] +"+(performance.now()-t0|0)+"ms gateway listening\\n");try{if(typeof Module.flushCompileCache==="function"){Module.flushCompileCache();process.stderr.write("[startup-timer] compile cache flushed\\n")}}catch{}}return ow.call(this,c,...a)};
+const ow=process.stdout.write;process.stdout.write=function(c,...a){if(String(c).includes("listening on")){process.stderr.write("[startup-timer] +"+(performance.now()-t0|0)+"ms gateway listening\\n");try{if(typeof Module.flushCompileCache==="function"){Module.flushCompileCache();if(V)process.stderr.write("[startup-timer] compile cache flushed\\n")}}catch{}}return ow.call(this,c,...a)};
 `,
           );
         }
@@ -387,7 +387,7 @@ const ow=process.stdout.write;process.stdout.write=function(c,...a){if(String(c)
 
     let effectiveAttempt = this.restartCount;
     if (runDuration >= this.options.healthyThresholdMs) {
-      log.info(
+      log.debug(
         "Gateway ran long enough to be considered healthy, resetting backoff",
       );
       effectiveAttempt = 1;

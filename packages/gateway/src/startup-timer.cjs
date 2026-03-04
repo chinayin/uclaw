@@ -23,6 +23,14 @@ function logPhase(label) {
   process.stderr.write(`[startup-timer] +${elapsed}ms ${label}\n`);
 }
 
+// Verbose-only variant — gated by EASYCLAW_STARTUP_DEBUG=1.
+// Logs detailed diagnostics (individual slow requires, cache internals, etc.)
+// that are useful for perf debugging but noisy in production.
+const verbose = !!process.env.EASYCLAW_STARTUP_DEBUG;
+function logPhaseV(label) {
+  if (verbose) logPhase(label);
+}
+
 logPhase("preload executing");
 
 // ── Compile cache diagnostic ──
@@ -37,7 +45,7 @@ if (compileCacheDir) {
       const sub = path.join(compileCacheDir, e);
       if (fs.statSync(sub).isDirectory()) {
         const subEntries = fs.readdirSync(sub);
-        logPhase(`  cache bucket: ${e} (${subEntries.length} files)`);
+        logPhaseV(`  cache bucket: ${e} (${subEntries.length} files)`);
       }
     }
   } catch {
@@ -119,7 +127,7 @@ Module._load = function timedLoad(request, parent, isMain) {
         isMain,
       );
       pluginSdkDir = path.dirname(pluginSdkResolvedPath);
-      logPhase(`plugin-sdk deferred (alias set): ${pluginSdkResolvedPath}`);
+      logPhaseV(`plugin-sdk deferred (alias set): ${pluginSdkResolvedPath}`);
     } catch {
       // Non-critical — extensions will still load via jiti fallback
     }
@@ -136,7 +144,7 @@ Module._load = function timedLoad(request, parent, isMain) {
   if (dur > 100) {
     const shortReq =
       request.length > 60 ? "..." + request.slice(-57) : request;
-    logPhase(`require("${shortReq}") took ${dur.toFixed(0)}ms`);
+    logPhaseV(`require("${shortReq}") took ${dur.toFixed(0)}ms`);
   }
   return result;
 };
@@ -160,7 +168,7 @@ process.stdout.write = function (chunk, ...args) {
     try {
       if (typeof Module.flushCompileCache === "function") {
         Module.flushCompileCache();
-        logPhase("compile cache flushed to disk");
+        logPhaseV("compile cache flushed to disk");
       }
     } catch {
       // Non-critical — cache will be written at next graceful exit (if any)
@@ -171,5 +179,5 @@ process.stdout.write = function (chunk, ...args) {
 
 // Log at process exit for total lifetime
 process.on("exit", () => {
-  logPhase("process exiting");
+  logPhaseV("process exiting");
 });
