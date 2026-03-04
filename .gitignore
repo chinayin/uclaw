@@ -15,4 +15,5 @@ test-results/
 .venv/
 .env
 CLAUDE.md
+ANTIGRAVITY.md
 tmp/
