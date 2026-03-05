@@ -7,8 +7,12 @@ import { resolveUserSkillsDir, resolveOpenClawStateDir } from "@easyclaw/core/no
 
 const log = createLogger("panel-server");
 
-/** Directory where user-installed skills are stored. */
-export const USER_SKILLS_DIR = resolveUserSkillsDir();
+/** Directory where user-installed skills are stored.
+ *  Lazy function (not a constant) because OPENCLAW_STATE_DIR may be set
+ *  after module import (see main.ts migration override at line 277). */
+export function getUserSkillsDir(): string {
+  return resolveUserSkillsDir();
+}
 
 export function sendJson(res: ServerResponse, status: number, data: unknown): void {
   res.writeHead(status, { "Content-Type": "application/json; charset=utf-8" });

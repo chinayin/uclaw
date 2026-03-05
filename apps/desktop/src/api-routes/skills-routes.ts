@@ -6,7 +6,7 @@ import { formatError, getGraphqlUrl, getApiBaseUrl } from "@easyclaw/core";
 import { createLogger } from "@easyclaw/logger";
 import { initCSBridge, startCS, stopCS, getCSStatus, updateCSConfig } from "../customer-service-bridge.js";
 import type { RouteHandler } from "./api-context.js";
-import { sendJson, parseBody, proxiedFetch, parseSkillFrontmatter, invalidateSkillsSnapshot, USER_SKILLS_DIR } from "./route-utils.js";
+import { sendJson, parseBody, proxiedFetch, parseSkillFrontmatter, invalidateSkillsSnapshot, getUserSkillsDir } from "./route-utils.js";
 
 const log = createLogger("panel-server");
 
@@ -69,7 +69,7 @@ export const handleSkillsRoutes: RouteHandler = async (req, res, url, pathname, 
   }
 
   if (pathname === "/api/skills/installed" && req.method === "GET") {
-    const skillsDir = USER_SKILLS_DIR;
+    const skillsDir = getUserSkillsDir();
     try {
       let entries: string[];
       try {
@@ -138,7 +138,7 @@ export const handleSkillsRoutes: RouteHandler = async (req, res, url, pathname, 
       }
 
       const zipBuffer = Buffer.from(await response.arrayBuffer());
-      const skillsDir = USER_SKILLS_DIR;
+      const skillsDir = getUserSkillsDir();
       const skillDir = join(skillsDir, body.slug);
       await fs.mkdir(skillDir, { recursive: true });
 
@@ -168,7 +168,7 @@ export const handleSkillsRoutes: RouteHandler = async (req, res, url, pathname, 
       sendJson(res, 400, { error: "Invalid slug" });
       return true;
     }
-    const skillsDir = USER_SKILLS_DIR;
+    const skillsDir = getUserSkillsDir();
     try {
       await fs.rm(join(skillsDir, body.slug), { recursive: true, force: true });
       invalidateSkillsSnapshot();
@@ -181,7 +181,7 @@ export const handleSkillsRoutes: RouteHandler = async (req, res, url, pathname, 
   }
 
   if (pathname === "/api/skills/open-folder" && req.method === "POST") {
-    const skillsDir = USER_SKILLS_DIR;
+    const skillsDir = getUserSkillsDir();
     await fs.mkdir(skillsDir, { recursive: true });
     const cmd = process.platform === "darwin" ? "open"
       : process.platform === "win32" ? "explorer"
