@@ -283,9 +283,6 @@ importers:
 
   extensions/mobile-chat-channel:
     dependencies:
-      '@easyclaw/core':
-        specifier: workspace:*
-        version: link:../../packages/core
       '@easyclaw/logger':
         specifier: workspace:*
         version: link:../../packages/logger
