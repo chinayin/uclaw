@@ -179,6 +179,18 @@ export function buildProxyEnv(): Record<string, string> {
  */
 export function writeProxySetupModule(stateDir: string, vendorDir: string): string {
   const setupPath = join(stateDir, "proxy-setup.cjs");
+  // The global dispatcher captures proxy env vars at creation time, so we can
+  // safely delete them afterward. This is critical because the vendor's
+  // resolveProxyFetchFromEnv() re-reads HTTP(S)_PROXY and, when set, creates a
+  // fetch wrapper that uses undici's named `fetch` export instead of
+  // globalThis.fetch.  undici.fetch does NOT set Content-Type correctly for
+  // FormData (multipart/form-data), which breaks Groq audio transcription
+  // (returns HTTP 400 "Content-Type isn't multipart/form-data").
+  //
+  // By deleting the env vars after the global dispatcher is configured, the
+  // vendor's resolveProxyFetchFromEnv() returns undefined, causing the SSRF
+  // guard to fall back to globalThis.fetch which handles FormData correctly
+  // and still routes through the proxy via the global dispatcher.
   const code = `\
 "use strict";
 const { createRequire } = require("node:module");
@@ -188,6 +200,13 @@ try {
   const vendorRequire = createRequire(path.join(vendorDir, "package.json"));
   const { setGlobalDispatcher, EnvHttpProxyAgent } = vendorRequire("undici");
   setGlobalDispatcher(new EnvHttpProxyAgent());
+  // Delete proxy env vars so vendor code uses globalThis.fetch (not undici.fetch)
+  // which handles FormData/multipart correctly. The global dispatcher already
+  // captures the proxy configuration.
+  delete process.env.HTTP_PROXY;
+  delete process.env.HTTPS_PROXY;
+  delete process.env.http_proxy;
+  delete process.env.https_proxy;
 } catch (_) {}
 `;
   writeFileSync(setupPath, code, "utf-8");
