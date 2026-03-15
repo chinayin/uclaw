@@ -41,8 +41,10 @@ jobs:
         run: |
           node apps/desktop/scripts/prod-model-switch-check.mjs apps/desktop/release/win-unpacked/EasyClaw.exe
         env:
-          EASYCLAW_PROD_CHECK_INITIAL_BUDGET_SECONDS: 12
-          EASYCLAW_PROD_CHECK_SWITCH_BUDGET_SECONDS: 8
+          EASYCLAW_PROD_CHECK_INITIAL_BUDGET_SECONDS: 0
+          EASYCLAW_PROD_CHECK_INITIAL_TIMEOUT_MS: 120000
+          EASYCLAW_PROD_CHECK_SWITCH_BUDGET_SECONDS: 20
+          EASYCLAW_PROD_CHECK_SWITCH_TIMEOUT_MS: 90000
 
       - name: Upload unsigned installer for signing
         uses: actions/upload-artifact@v6

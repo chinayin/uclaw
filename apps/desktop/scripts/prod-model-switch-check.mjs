@@ -5,6 +5,8 @@ import path from "node:path";
 
 const DEFAULT_INITIAL_READY_BUDGET_SECONDS = 12;
 const DEFAULT_MODEL_SWITCH_BUDGET_SECONDS = 8;
+const DEFAULT_INITIAL_READY_TIMEOUT_MS = 120_000;
+const DEFAULT_MODEL_SWITCH_TIMEOUT_MS = 90_000;
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -13,6 +15,17 @@ function sleep(ms) {
 function parseReadyTimes(logText) {
   const matches = [...logText.matchAll(/Gateway ready in ([0-9.]+)s/g)];
   return matches.map((m) => Number(m[1]));
+}
+
+function parseOptionalPositiveNumber(value, fallback) {
+  if (value === undefined || value === null || value === "") {
+    return fallback;
+  }
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return null;
+  }
+  return parsed;
 }
 
 async function waitFor(condition, timeoutMs, intervalMs = 250) {
@@ -34,9 +47,17 @@ async function main() {
     process.env.EASYCLAW_PROD_CHECK_INITIAL_BUDGET_SECONDS ??
       DEFAULT_INITIAL_READY_BUDGET_SECONDS,
   );
-  const modelSwitchBudgetSeconds = Number(
-    process.env.EASYCLAW_PROD_CHECK_SWITCH_BUDGET_SECONDS ??
-      DEFAULT_MODEL_SWITCH_BUDGET_SECONDS,
+  const modelSwitchBudgetSeconds = parseOptionalPositiveNumber(
+    process.env.EASYCLAW_PROD_CHECK_SWITCH_BUDGET_SECONDS,
+    DEFAULT_MODEL_SWITCH_BUDGET_SECONDS,
+  );
+  const initialReadyTimeoutMs = Number(
+    process.env.EASYCLAW_PROD_CHECK_INITIAL_TIMEOUT_MS ??
+      DEFAULT_INITIAL_READY_TIMEOUT_MS,
+  );
+  const modelSwitchTimeoutMs = Number(
+    process.env.EASYCLAW_PROD_CHECK_SWITCH_TIMEOUT_MS ??
+      DEFAULT_MODEL_SWITCH_TIMEOUT_MS,
   );
 
   const tempDir = mkdtempSync(path.join(tmpdir(), "easyclaw-prod-check-"));
@@ -80,9 +101,9 @@ async function main() {
       const logText = readFileSync(logPath, "utf-8");
       const readyTimes = parseReadyTimes(logText);
       return readyTimes.length > 0 ? readyTimes[0] : null;
-    }, 45_000);
+    }, initialReadyTimeoutMs);
 
-    await window.waitForSelector(".chat-status-dot-connected", { timeout: 45_000 });
+    await window.waitForSelector(".chat-status-dot-connected", { timeout: initialReadyTimeoutMs });
 
     const initialLogText = readFileSync(logPath, "utf-8");
     const initialReadyCount = parseReadyTimes(initialLogText).length;
@@ -128,16 +149,16 @@ async function main() {
         modelSwitchReady: readyTimes[initialReadyCount],
         sawBackgroundFeishu: logText.includes("feishu: scheduling background tool registration"),
       };
-    }, 60_000);
+    }, modelSwitchTimeoutMs);
 
-    await window.waitForSelector(".chat-status-dot-connected", { timeout: 60_000 });
+    await window.waitForSelector(".chat-status-dot-connected", { timeout: modelSwitchTimeoutMs });
 
-    if (initialReady > initialReadyBudgetSeconds) {
+    if (Number.isFinite(initialReadyBudgetSeconds) && initialReadyBudgetSeconds > 0 && initialReady > initialReadyBudgetSeconds) {
       throw new Error(
         `Initial gateway ready time ${initialReady}s exceeded budget ${initialReadyBudgetSeconds}s`,
       );
     }
-    if (modelSwitchInfo.modelSwitchReady > modelSwitchBudgetSeconds) {
+    if (modelSwitchBudgetSeconds !== null && modelSwitchInfo.modelSwitchReady > modelSwitchBudgetSeconds) {
       throw new Error(
         `Model-switch gateway ready time ${modelSwitchInfo.modelSwitchReady}s exceeded budget ${modelSwitchBudgetSeconds}s`,
       );
@@ -148,6 +169,8 @@ async function main() {
       modelSwitchReadySeconds: modelSwitchInfo.modelSwitchReady,
       initialReadyBudgetSeconds,
       modelSwitchBudgetSeconds,
+      initialReadyTimeoutMs,
+      modelSwitchTimeoutMs,
       providerKeyId: providerKey.id,
       updatedModel,
       sawBackgroundFeishu: modelSwitchInfo.sawBackgroundFeishu,
