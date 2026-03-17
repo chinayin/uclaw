@@ -5,16 +5,16 @@ Subject: [PATCH] vendor(openclaw): add browser lifecycle hooks for plugin
  integration
 
 Why:
-- EasyClaw needs to track browser session lifecycle (start/stop) to
+- RivonClaw needs to track browser session lifecycle (start/stop) to
   persist session state (cookies) across restarts
-- EasyClaw needs before/after action hooks for future extensibility
+- RivonClaw needs before/after action hooks for future extensibility
   (auth injection, captcha solving, page preparation)
 - Existing before_tool_call/after_tool_call hooks lack browser-specific
   context and proper timing semantics
 
 Removal:
 - When OpenClaw adds native browser lifecycle hooks upstream
-- Track: propose as upstream PR after proving the design in EasyClaw
+- Track: propose as upstream PR after proving the design in RivonClaw
 
 Tests:
 - extensions/browser-profiles-tools/src/browser-lifecycle-hooks.test.ts
@@ -40,7 +40,7 @@ index 80faf99a1..7d2413805 100644
            }
          : null;
  
-+      // --- Browser lifecycle hooks (EasyClaw patch) ---
++      // --- Browser lifecycle hooks (RivonClaw patch) ---
 +      const hookRunner = getGlobalHookRunner();
 +      const browserHookCtx = { sessionKey: opts?.agentSessionKey, profile };
 +
