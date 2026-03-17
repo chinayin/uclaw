@@ -17,7 +17,7 @@ extraMetadata:
   main: dist/main.cjs
 
 asar: true
-icon: build/icon
+icon: build/icon.png
 
 # Files copied outside asar into Contents/Resources/
 extraResources:
