@@ -1,5 +1,5 @@
 appId: com.easyclaw.desktop
-productName: EasyClaw
+productName: RivonClaw
 
 directories:
   output: release
@@ -17,7 +17,7 @@ extraMetadata:
   main: dist/main.cjs
 
 asar: true
-icon: build/icon.png
+icon: build/icon
 
 # Files copied outside asar into Contents/Resources/
 extraResources:
@@ -39,7 +39,7 @@ extraResources:
   # In pack-only builds (no bundle step), this dir doesn't exist and is skipped.
   - from: ".prebundled-extensions"
     to: "vendor/openclaw/extensions"
-  # EasyClaw extensions — auto-discovered by OpenClaw at runtime
+  # RivonClaw extensions — auto-discovered by OpenClaw at runtime
   - from: "../../extensions"
     to: "extensions"
     filter:
@@ -103,7 +103,7 @@ dmg:
 
 publish:
   - provider: generic
-    url: https://www.easy-claw.com/releases/
+    url: https://www.rivonclaw.com/releases/
 
 afterPack: scripts/copy-vendor-deps.cjs
 afterSign: scripts/notarize.cjs

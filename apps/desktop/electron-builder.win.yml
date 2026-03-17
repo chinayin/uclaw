@@ -5,7 +5,7 @@
 extends: electron-builder.yml
 
 win:
-  icon: build/icon.png
+  icon: build/icon
   # Code signing via environment variables:
   #   CSC_LINK  — path or URL to the .pfx / .p12 certificate
   #   CSC_KEY_PASSWORD — certificate password
@@ -29,10 +29,10 @@ nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true
   installerSidebar: build/installerSidebar.png
-  uninstallDisplayName: "EasyClaw"
+  uninstallDisplayName: "RivonClaw"
   createDesktopShortcut: true
   createStartMenuShortcut: true
-  shortcutName: "EasyClaw"
+  shortcutName: "RivonClaw"
   # Simplified to single language to avoid NSIS language detection issues
   # Multi-language support can be re-enabled after verifying language codes
   # installerLanguages:

@@ -5,7 +5,7 @@
 extends: electron-builder.yml
 
 linux:
-  icon: build/icon.png
+  icon: build/icon
   category: Utility
   maintainer: EasyClaw
   target:
