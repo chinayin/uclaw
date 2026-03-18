@@ -35,6 +35,7 @@ const PATHS_TO_COPY = [
   "openclaw/identity",
   "openclaw/workspace",
   "openclaw/agents",
+  "openclaw/skills",
 ];
 
 /**
