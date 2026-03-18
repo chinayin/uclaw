@@ -481,7 +481,7 @@ export function Layout({
             </svg>
           </button>
           <h2 className="sidebar-brand">
-            <img src="/logo.png" alt="" className="sidebar-brand-logo" />
+            <img src="/icon.png" alt="" className="sidebar-brand-logo" />
             {!collapsed && (
               <>
                 <span className="sidebar-brand-text">
