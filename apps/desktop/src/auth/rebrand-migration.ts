@@ -4,7 +4,7 @@
 
 import { homedir, hostname, userInfo } from "node:os";
 import { join } from "node:path";
-import { copyFileSync, cpSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import { copyFileSync, cpSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { platform } from "node:os";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
@@ -36,6 +36,7 @@ const PATHS_TO_COPY = [
   "openclaw/workspace",
   "openclaw/agents",
   "openclaw/skills",
+  "openclaw/openclaw.json",
 ];
 
 /**
@@ -78,6 +79,9 @@ export async function migrateFromEasyClaw(): Promise<void> {
     // Selectively copy irreplaceable user data
     copyUserData(oldDir, newDir);
 
+    // Replace stale easyclaw references in the copied openclaw.json
+    replaceInConfig(join(newDir, "openclaw", "openclaw.json"));
+
     // Migrate secrets
     if (platform() === "darwin") {
       await migrateKeychainEntries();
@@ -118,10 +122,9 @@ function copyUserData(oldDir: string, newDir: string): void {
     const dest = join(newDir, relPath);
 
     try {
-      // Check if source is a directory (cpSync) or file (copyFileSync)
-      // by attempting cpSync with recursive — for a file this would fail,
-      // so we use a simple heuristic: known file entries vs directory entries.
-      if (relPath === "db.sqlite") {
+      // Detect file vs directory and copy accordingly
+      const srcStat = statSync(src);
+      if (srcStat.isFile()) {
         mkdirSync(join(dest, ".."), { recursive: true });
         copyFileSync(src, dest);
       } else {
@@ -132,6 +135,27 @@ function copyUserData(oldDir: string, newDir: string): void {
     } catch (err) {
       log.warn(`Failed to copy ${relPath}:`, err);
     }
+  }
+}
+
+/**
+ * Replace stale "easyclaw" references in a JSON config file.
+ */
+function replaceInConfig(configPath: string): void {
+  if (!existsSync(configPath)) return;
+  try {
+    const content = readFileSync(configPath, "utf-8");
+    const updated = content
+      .replaceAll("easyclaw-tools", "rivonclaw-tools")
+      .replaceAll("easyclaw-policy", "rivonclaw-policy")
+      .replaceAll("easyclaw-event-bridge", "rivonclaw-event-bridge")
+      .replaceAll("easyclaw-file-permissions", "rivonclaw-file-permissions");
+    if (updated !== content) {
+      writeFileSync(configPath, updated, "utf-8");
+      log.info(`Updated references in ${configPath}`);
+    }
+  } catch (err) {
+    log.warn(`Failed to update config at ${configPath}:`, err);
   }
 }
 
